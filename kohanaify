@@ -6,21 +6,18 @@
 
 set -e
 
-HELP="
-Create Kohana directory structure, clone the core, fetch useful files, change 
-permissions and update SELinux contexts for deployment.
 
-usage: kohanaify <path>
+if [ ! $1 ]; then
+    echo "usage: kohanaify <path>
+
+Create Kohana directory structure, clone the core, fetch useful files, change
+permissions and update SELinux contexts for deployment.
 
 You can use this script to update permissions and SELinux context on an
 existing application.
-    
-You may create a kohanaify script in your project to customize your app 
-initialization: it will be called by this script.
-"
 
-if [ ! $1 ]; then
-    echo $HELP
+You may create a kohanaify script in your project to customize your app
+initialization: it will be called by this script."
     exit 1
 fi
 
