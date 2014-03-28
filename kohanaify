@@ -1,11 +1,6 @@
 #!/bin/sh
-#
-# Kohanaify a new or existing application.
-#
-# Fixes SELinux context and permissions on files.
 
 set -e
-
 
 if [ ! $1 ]; then
     echo "usage: kohanaify <path>
