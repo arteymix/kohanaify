@@ -22,11 +22,11 @@ pushd $1
 
 mkdir -p application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views}
 echo 'Changing permissions on logs and cache directories...'
-sudo chmod 766 -R application/{logs,cache}
+sudo chmod 766 -R application/{logs,cache} modules
 
 if selinuxenabled; then
     echo 'Updating SELinux contexts...'
-    sudo chcon -R -t httpd_sys_script_ro_t application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views}
+    sudo chcon -R -t httpd_sys_script_ro_t application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views} modules
     sudo chcon -R -t httpd_sys_script_rw_t application/cache
     sudo chcon -R -t httpd_sys_script_ra_t application/logs
 fi
