@@ -1,0 +1,87 @@
+#!/bin/sh
+#
+# Kohanaify a new or existing application.
+#
+# Fixes SELinux context and permissions on files.
+
+set -e
+
+HELP="
+Create Kohana directory structure, clone the core, fetch useful files, change 
+permissions and update SELinux contexts for deployment.
+
+usage: kohanaify <path>
+
+You can use this script to update permissions and SELinux context on an
+existing application.
+    
+You may create a kohanaify script in your project to customize your app 
+initialization: it will be called by this script.
+"
+
+if [ ! $1 ]; then
+    echo $HELP
+    exit 1
+fi
+
+mkdir -p $1
+
+pushd $1
+
+mkdir -p application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views}
+echo 'Changing permissions on logs and cache directories...'
+sudo chmod 766 -R application/{logs,cache}
+
+if selinuxenabled; then
+    echo 'Updating SELinux contexts...'
+    sudo chcon -R -t httpd_sys_script_ro_t application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views}
+    sudo chcon -R -t httpd_sys_script_rw_t application/cache
+    sudo chcon -R -t httpd_sys_script_ra_t application/logs
+fi
+
+if [ ! -d .git ]; then
+    git init
+fi
+
+if [ ! -d system ]; then
+    git submodule add https://github.com/kohana/core system
+fi
+
+if [ ! -f README.md ]; then
+    echo "# $1" > README.md
+fi
+
+if [ ! -f index.php ]; then
+    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/index.php > index.php
+fi
+
+if [ ! -f install.php ]; then
+    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/install.php > install.php
+fi
+
+if [ ! -f htaccess.example ]; then
+    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/htaccess.example > htaccess.example
+fi
+
+if [ ! -f composer.json ]; then
+    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/composer.json > composer.json
+fi
+
+if [ ! -f application/bootstrap.php ]; then
+    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/application/bootstrap.php > application/bootstrap.php
+fi
+
+# execute a local kohanaify script
+#
+# add submodules, set custom permissions, etc...
+if [ -x kohanaify ]; then
+    ./kohanaify
+fi
+
+# initialize and update submodules
+git submodule init
+git submodule update
+
+popd
+
+echo "Your application is ready!"
