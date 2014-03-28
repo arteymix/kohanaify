@@ -47,11 +47,7 @@ if [ ! -f index.php ]; then
     curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/index.php > index.php
 fi
 
-if [ ! -f install.php ]; then
-    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/install.php > install.php
-fi
-
-if [ ! -f htaccess.example ]; then
+if [ ! -f .htaccess -a ! -f htaccess.example ]; then
     curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/htaccess.example > htaccess.example
 fi
 
