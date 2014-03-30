@@ -2,8 +2,8 @@
 
 set -e
 
-if [ ! $1 ]; then
-    echo "usage: kohanaify <path>
+if [ $1 -eq '--help' ]; then
+    echo "usage: kohanaify [<path>]
 
 Create Kohana directory structure, clone the core, fetch useful files, change
 permissions and update SELinux contexts for deployment.
@@ -16,13 +16,20 @@ initialization: it will be called by this script."
     exit 1
 fi
 
-mkdir -p $1
+if [ $1 ]; then
+    DIR=$1
+else
+    DIR=.
+fi
 
-pushd $1
+mkdir -p $DIR
 
-mkdir -p application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views}
+pushd $DIR
+
+mkdir -p application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views} modules
+
 echo 'Changing permissions on logs and cache directories...'
-sudo chmod 766 -R application/{logs,cache} modules
+sudo chmod 777 -R application/{logs,cache}
 
 if selinuxenabled; then
     echo 'Updating SELinux contexts...'
@@ -31,24 +38,16 @@ if selinuxenabled; then
     sudo chcon -R -t httpd_sys_script_ra_t application/logs
 fi
 
-if [ ! -d .git ]; then
-    git init
-fi
-
-if [ ! -d system ]; then
-    git submodule add https://github.com/kohana/core system
-fi
-
 if [ ! -f README.md ]; then
-    echo "# $1" > README.md
+    touch README.md
 fi
 
 if [ ! -f index.php ]; then
     curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/index.php > index.php
 fi
 
-if [ ! -f .htaccess -a ! -f htaccess.example ]; then
-    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/htaccess.example > htaccess.example
+if [ ! -f .htaccess -a ! -f example.htaccess ]; then
+    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/example.htaccess > example.htaccess
 fi
 
 if [ ! -f composer.json ]; then
@@ -59,11 +58,13 @@ if [ ! -f application/bootstrap.php ]; then
     curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/application/bootstrap.php > application/bootstrap.php
 fi
 
-# execute a local kohanaify script
-#
-# add submodules, set custom permissions, etc...
+# Execute a local kohanaify script
+# 
+# Create your assets hierarchy, set your permissions, 
+# add your submodules, etc...
 if [ -x kohanaify ]; then
-    ./kohanaify
+    echo 'Executing a local kohanaify scirpt...'
+    source ./kohanaify # preserve bash context
 fi
 
 # initialize and update submodules
