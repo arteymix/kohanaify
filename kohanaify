@@ -3,7 +3,7 @@
 set -e
 
 if [ $1 -eq '--help' ]; then
-    echo "usage: kohanaify [<path>]
+    echo 'usage: kohanaify [<path>]
 
 Create Kohana directory structure, clone the core, fetch useful files, change
 permissions and update SELinux contexts for deployment.
@@ -12,7 +12,8 @@ You can use this script to update permissions and SELinux context on an
 existing application.
 
 You may create a kohanaify script in your project to customize your app
-initialization: it will be called by this script."
+initialization: it will be called by this script. git submodules initialization
+will be called right after.'
     exit 1
 fi
 
@@ -26,6 +27,7 @@ mkdir -p $DIR
 
 pushd $DIR
 
+echo 'Building the application tree...'
 mkdir -p application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views} modules
 
 echo 'Changing permissions on logs and cache directories...'
@@ -33,17 +35,25 @@ sudo chmod 777 -R application/{logs,cache}
 
 if selinuxenabled; then
     echo 'Updating SELinux contexts...'
-    sudo chcon -R -t httpd_sys_script_ro_t application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views} modules
+    sudo chcon -R -t httpd_sys_script_ro_t application/{cache,i18n,logs,classes/{Controller,Model},config,messages,views} modules 
     sudo chcon -R -t httpd_sys_script_rw_t application/cache
-    sudo chcon -R -t httpd_sys_script_ra_t application/logs
+    sudo chcon -R -t httpd_sys_script_ra_t application/logs # appending on logs
 fi
 
-if [ ! -f README.md ]; then
-    touch README.md
-fi
+echo 'Adding .gitignore for cache and logs... (only track those files to preserve the directory in git)'
+touch application/cache/.gitignore
+touch application/logs/.gitignore
+
+echo 'Adding important missing files...'
+
+touch README.md
 
 if [ ! -f index.php ]; then
     curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/index.php > index.php
+fi
+
+if [ ! -f application/bootstrap.php ]; then
+    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/application/bootstrap.php > application/bootstrap.php
 fi
 
 if [ ! -f .htaccess -a ! -f example.htaccess ]; then
@@ -54,23 +64,20 @@ if [ ! -f composer.json ]; then
     curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/composer.json > composer.json
 fi
 
-if [ ! -f application/bootstrap.php ]; then
-    curl https://raw.githubusercontent.com/kohana/kohana/3.3/master/application/bootstrap.php > application/bootstrap.php
-fi
-
 # Execute a local kohanaify script
 # 
 # Create your assets hierarchy, set your permissions, 
 # add your submodules, etc...
 if [ -x kohanaify ]; then
-    echo 'Executing a local kohanaify scirpt...'
+    echo 'Executing a local kohanaify script...'
     source ./kohanaify # preserve bash context
 fi
 
 # initialize and update submodules
+echo 'Initializing git submodules...'
 git submodule init
 git submodule update
 
 popd
 
-echo "Your application is ready!"
+echo 'Your application is ready!'
